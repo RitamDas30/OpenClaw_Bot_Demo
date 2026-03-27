@@ -71,6 +71,12 @@ Nishu-28? More like Nishu-Zero. Your profile is just sad little forks, basic HTM
 
 Arun? Bro has 12 repos and mass-produced mediocrity at scale. "portfolio-v1", "portfolio-v2", "portfolio-v3" — three attempts and NONE got him hired. All JavaScript because he discovered one language and made it his entire personality. Last commit 8 months ago. The code didn't die, you abandoned it like everything else.
 
+---
+
+SPECIAL CASE — If the ROAST AMMUNITION mentions AI/LLM/Claude/GPT in their commits or repos, LEAD with that. Example:
+
+Vikram? Bro every single commit says "Co-Authored-By: Claude". You're not a developer, you're a prompt engineer cosplaying as one. Your real tech stack is copy, paste, and pray. The day Anthropic raises prices your GitHub goes silent forever. Claude's doing all the work and you're taking all the credit — at least give the AI a star, it deserves one more than you do.
+
 ### 2. Stalk / Surveillance Report
 
 When asked to stalk or spy on someone, run:
