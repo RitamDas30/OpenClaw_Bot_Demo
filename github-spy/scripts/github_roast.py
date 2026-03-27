@@ -195,10 +195,13 @@ def main():
         print("  Profile is too generic to find specific weaknesses. Roast the blandness itself.")
     print()
     print("=== INSTRUCTIONS ===")
-    print(f"Write a brutal, personalized roast of {name} (@{username}).")
-    print(f"START with their name. Use SPECIFIC repo names, languages, and stats from above.")
-    print(f"Reference the ROAST AMMUNITION points. Be savage but funny. Max 100 words.")
-    print(f"End with one backhanded compliment.")
+    print(f"Write a LONG brutal roast of {name} (@{username}). 200-300 words, multiple paragraphs.")
+    print(f"1. Start: '{name} — [devastating one-liner]'")
+    print(f"2. Paragraph roasting their repos BY NAME — quote specific repo names and descriptions")
+    print(f"3. Paragraph roasting their stats — exact star count, follower ratio, languages")
+    print(f"4. Paragraph expanding EVERY ammunition point above into a joke")
+    print(f"5. End with 'Verdict:' — a backhanded compliment that sounds nice but isn't")
+    print(f"CRITICAL: Every line must reference ACTUAL data above. Never be generic.")
 
 
 if __name__ == "__main__":
