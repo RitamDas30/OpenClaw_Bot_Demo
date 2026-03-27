@@ -290,13 +290,32 @@ def main():
         print("  No specific weaknesses found. Roast the blandness itself.")
     print()
 
+    # Random seed to force unique roasts every time
+    import random
+    angles = [
+        "Focus on their WORST repo name and mock it",
+        "Focus on their follower/following ratio and mock their social skills",
+        "Focus on their fork addiction and question their originality",
+        "Focus on their abandoned repos and mock their commitment issues",
+        "Focus on their star count and mock their irrelevance",
+        "Focus on their language choices and mock their taste",
+        "Focus on their commit messages and mock their laziness",
+        "Focus on their repo descriptions (or lack of) and mock their effort",
+        "Focus on how long they've been on GitHub vs what they've produced",
+        "Compare them to a specific animal or object that matches their GitHub energy",
+    ]
+    chosen_angle = random.choice(angles)
+
     print("=== ROAST INSTRUCTIONS ===")
     print(f"Write a SHORT BRUTAL roast of {name}. 3-5 sentences MAX. Raw text, no formatting.")
-    print(f"Start: '{name}? More like [insult].'")
+    print(f"LANGUAGE: ENGLISH ONLY. Even if the profile is in Chinese/Japanese/Korean/etc, YOUR roast MUST be in English.")
+    print(f"Start: '{name}? More like [creative insult].'")
+    print(f"ANGLE FOR THIS ROAST: {chosen_angle}")
     print(f"Then 2-3 sentences attacking their repos by name, stats, and ammunition points.")
     print(f"End with a devastating closer that questions their existence as a developer.")
     print(f"NO bullet points. NO headers. NO analysis. NO encouragement. Just pure savage text.")
     print(f"Swearing allowed. Be a bully. Make them angry. Every word must hurt.")
+    print(f"THIS ROAST MUST BE UNIQUE. Never repeat previous roasts. Random seed: {random.randint(10000,99999)}")
 
 
 if __name__ == "__main__":
