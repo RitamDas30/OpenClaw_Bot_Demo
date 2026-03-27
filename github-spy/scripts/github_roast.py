@@ -269,20 +269,12 @@ def main():
     print()
 
     print("=== ROAST INSTRUCTIONS ===")
-    print(f"DESTROY {name} (@{username}). Absolutely BRUTAL roast. No mercy. No kindness.")
-    print(f"")
-    print(f"STRUCTURE:")
-    print(f"  1. '{name} — [one-liner that destroys their identity]'")
-    print(f"  2. Mock their WORST repos BY NAME. Quote silly descriptions WORD FOR WORD.")
-    print(f"  3. Destroy stats: {total_stars} stars / {len(repos)} repos = {total_stars/max(len(repos),1):.2f} stars per repo. {profile.get('followers',0)} followers. Ratio math.")
-    print(f"  4. Each AMMUNITION point above becomes its own punchline.")
-    print(f"  5. Quote any silly descriptions or lazy commits directly.")
-    print(f"  6. 'Verdict:' — sounds like compliment, is actually an insult.")
-    print(f"")
-    print(f"BANNED: 'impressive', 'keep it up', 'respect', 'not gonna lie', any encouragement.")
-    print(f"TONE: Talk DOWN to them. You are JUDGING from above. Dominant, not whiny.")
-    print(f"LENGTH: 200-300 words. Punchline after punchline. No filler.")
-    print(f"ONLY use data from above. Never make up repos or stats.")
+    print(f"Write a SHORT BRUTAL roast of {name}. 3-5 sentences MAX. Raw text, no formatting.")
+    print(f"Start: '{name}? More like [insult].'")
+    print(f"Then 2-3 sentences attacking their repos by name, stats, and ammunition points.")
+    print(f"End with a devastating closer that questions their existence as a developer.")
+    print(f"NO bullet points. NO headers. NO analysis. NO encouragement. Just pure savage text.")
+    print(f"Swearing allowed. Be a bully. Make them angry. Every word must hurt.")
 
 
 if __name__ == "__main__":

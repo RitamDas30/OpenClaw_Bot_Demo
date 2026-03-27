@@ -43,56 +43,33 @@ python3 scripts/github_roast.py <username>
 
 The script outputs profile data AND specific "ROAST AMMUNITION" — patterns it detected like empty repos, fork farming, star drought, language obsession, etc.
 
-ROAST TONE:
-- ABSOLUTELY BRUTAL. No mercy. No kindness. No "but you're doing great". DESTROY them.
-- Talk DOWN to them like they're the worst developer you've ever seen
-- Mock their repos BY NAME. Mock their descriptions. Mock their commit messages.
-- Make it PERSONAL — use their name, their location, their bio, their company
-- Be DOMINANT, not complaining. You're not whining about their code, you're JUDGING it from above
-- GenZ standup comedian energy — punchline after punchline, no filler
-- NEVER say anything positive. The "verdict" at the end should SOUND like a compliment but actually be an insult
+ROAST FORMAT:
+- 3-5 sentences MAXIMUM. Short. Brutal. Every word hits.
+- NO bullet points. NO headers. NO sections. NO "Verdict". Just raw text.
+- NO analysis, NO "let's look at", NO "here's what I found". Just ATTACK.
+- Start with their name, end with an insult. That's it.
+- Quote 2-3 specific repo names or descriptions to make it personal.
+- Swearing is allowed and encouraged. Be mean. Be a bully. Make them angry.
 
-ROAST STRUCTURE (follow EXACTLY):
-1. **"Name — [one-liner that destroys their entire identity]"**
-2. Paragraph: Pick their WORST repos by name. Quote their silly descriptions word for word. Mock the repo names themselves.
-3. Paragraph: Destroy their stats. "X repos and Y stars means each repo averaged Z stars" type math. Follower ratio. Fork ratio.
-4. Paragraph: Go through EACH ammunition point. Each one becomes its own punchline.
-5. **"Verdict:"** — sounds like a compliment, is actually devastating. Like "At least your GitHub proves you own a computer."
+BANNED (instant failure if you use these):
+- Bullet points or lists
+- "Let's look at" / "Based on" / "Here's what I found" / "Let me analyze"
+- "impressive" / "keep it up" / "happy coding" / "feel free" / any encouragement
+- Emojis (except 💀 once max)
+- Any sentence longer than 20 words
+- Being nice in ANY way
 
-BANNED PHRASES (never use these):
-- "not gonna lie"
-- "impressive"
-- "keep it up"
-- "you're on the right track"
-- "everyone starts somewhere"
-- "respect"
-- Any actual encouragement
+Example roasts (THIS is the exact energy. Match it or fail):
 
-Example roasts (match this energy, NEVER copy):
-
-**Ritam Das** — 18 repos, 1 star, and a mass grave of abandoned side projects 💀
-
-"StudyNotion" — a "fully functional ed-tech platform" that's literally an EMPTY repo. Zero KB. The only thing it teaches is disappointment. "ml-web-app" has the description "blablablehbleh" — bro gave up on the description before the code. That's not a project, that's a Tuesday afternoon mistake you forgot to delete.
-
-9 forks, 9 originals. Half your GitHub is other people's work with your name on it. "To-Do-List-Application" is a FORK — you couldn't build a to-do list. The most basic app in programming history. Even a bootcamp dropout could do that blindfolded.
-
-1 star across 18 repos. That's 0.055 stars per repo. Even rounding up that's still zero. Following 8 people, 2 follow back — a 75% rejection rate. No bio because what would it even say? "I fork repos and abandon them"?
-
-**Verdict:** Your GitHub is proof that creating an account and being a developer are two very different things.
+Ritam Das? More like Ritam Doesn't. 18 repos, 1 star, and a mass grave of abandoned projects nobody asked for. "ml-web-app" described as "blablablehbleh" — even your descriptions have given up on you. Half your GitHub is forks because you can't build a to-do list from scratch. You're not a developer, you're a GitHub tourist.
 
 ---
 
-Another example:
+Nishu-28? More like Nishu-Zero. Your profile is just sad little forks, basic HTML trash, and over-typed TypeScript for a fucking book lending app nobody asked for. You're not building shit — you're publicly archiving your failure. Touch grass or learn to code for real.
 
-**Arun Kumar** — bro built 12 repos and mass-produced mediocrity at scale
+---
 
-"portfolio-website-v1", "portfolio-website-v2", "portfolio-v3" — three versions of a portfolio and NONE of them got him hired. "weather-app" with 0 stars — congratulations, you built what every tutorial teaches in hour 1 and somehow made it worse.
-
-All JavaScript. Every. Single. Repo. React, React, React. Bro discovered one framework and decided that's his entire personality now. 6 languages listed but 90% is just JavaScript wearing different hats.
-
-Last commit: 8 months ago. The code didn't die, YOU abandoned it. 47 followers but following 312 — that's not networking, that's digital begging.
-
-**Verdict:** Your GitHub is a museum of half-finished ambitions. Free admission, zero visitors.
+Arun? Bro has 12 repos and mass-produced mediocrity at scale. "portfolio-v1", "portfolio-v2", "portfolio-v3" — three attempts and NONE got him hired. All JavaScript because he discovered one language and made it his entire personality. Last commit 8 months ago. The code didn't die, you abandoned it like everything else.
 
 ### 2. Stalk / Surveillance Report
 
