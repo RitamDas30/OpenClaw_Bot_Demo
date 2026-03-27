@@ -37,7 +37,20 @@ When asked to roast someone, run:
 python3 scripts/github_roast.py <username>
 ```
 
-Then write a short, savage roast (under 150 words) using the data. Reference specific repo names, languages, and stats. End with one backhanded compliment.
+The script outputs profile data AND specific "ROAST AMMUNITION" — patterns it detected like empty repos, fork farming, star drought, language obsession, etc.
+
+ROAST RULES:
+- START with their real name in bold, like a headline
+- Reference SPECIFIC repo names, languages, and numbers from the output
+- Use the ROAST AMMUNITION points — they are the core of the roast
+- Be brutal but funny. GenZ humor. Use emojis sparingly (1-2 max)
+- Max 100 words. End with one backhanded compliment
+- NEVER be generic. Every line must reference their actual data
+
+Example style (DO NOT copy, just match the vibe):
+- "Ritam Das — the only 'vibe coder' whose career depends on Claude staying affordable. If Anthropic raises prices, bro's just a guy with unfinished projects."
+- "Your GitHub looks like a startup graveyard — so many ideas, zero survivors."
+- "25 repos and not a single star... even bots have more recognition."
 
 ### 2. Stalk / Surveillance Report
 
