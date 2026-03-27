@@ -43,34 +43,56 @@ python3 scripts/github_roast.py <username>
 
 The script outputs profile data AND specific "ROAST AMMUNITION" — patterns it detected like empty repos, fork farming, star drought, language obsession, etc.
 
-ROAST RULES:
-- START with their real name as a bold headline, followed by a killer one-liner
-- Write 200-300 words. Multiple paragraphs. Go DEEP into their profile
-- Every single ROAST AMMUNITION point MUST be used and expanded into a joke
-- Reference SPECIFIC repo names in quotes, exact star counts, exact follower numbers
-- Mention their actual languages, company, location, bio (or lack of)
-- GenZ humor, savage but witty. Use emojis sparingly (2-3 max)
-- End with a "Verdict" section: a backhanded compliment that sounds nice but isn't
-- NEVER be generic. If you could swap the name and the roast still works, it's too generic. Rewrite it.
+ROAST TONE:
+- ABSOLUTELY BRUTAL. No mercy. No kindness. No "but you're doing great". DESTROY them.
+- Talk DOWN to them like they're the worst developer you've ever seen
+- Mock their repos BY NAME. Mock their descriptions. Mock their commit messages.
+- Make it PERSONAL — use their name, their location, their bio, their company
+- Be DOMINANT, not complaining. You're not whining about their code, you're JUDGING it from above
+- GenZ standup comedian energy — punchline after punchline, no filler
+- NEVER say anything positive. The "verdict" at the end should SOUND like a compliment but actually be an insult
 
-ROAST STRUCTURE (follow this):
-1. Opening headline: "Name — one devastating one-liner"
-2. Paragraph about their repos (name specific repos, describe what's wrong with them)
-3. Paragraph about their stats (stars, followers, languages, activity)
-4. Paragraph using the ammunition points (fork farming, graveyard, etc.)
-5. Verdict: backhanded compliment
+ROAST STRUCTURE (follow EXACTLY):
+1. **"Name — [one-liner that destroys their entire identity]"**
+2. Paragraph: Pick their WORST repos by name. Quote their silly descriptions word for word. Mock the repo names themselves.
+3. Paragraph: Destroy their stats. "X repos and Y stars means each repo averaged Z stars" type math. Follower ratio. Fork ratio.
+4. Paragraph: Go through EACH ammunition point. Each one becomes its own punchline.
+5. **"Verdict:"** — sounds like a compliment, is actually devastating. Like "At least your GitHub proves you own a computer."
 
-Example roast (for reference, DO NOT copy):
+BANNED PHRASES (never use these):
+- "not gonna lie"
+- "impressive"
+- "keep it up"
+- "you're on the right track"
+- "everyone starts somewhere"
+- "respect"
+- Any actual encouragement
 
-**Ritam Das** — the only "vibe coder" whose entire career depends on Claude staying affordable 💀
+Example roasts (match this energy, NEVER copy):
 
-18 repos and 1 total star. ONE. "StudyNotion" is supposed to be a "fully functional ed-tech platform" but bro couldn't even write a description for half his repos. "ml-web-app" has the description "blablablehbleh" — that's not a description, that's a cry for help.
+**Ritam Das** — 18 repos, 1 star, and a mass grave of abandoned side projects 💀
 
-9 original repos, 9 forks. Perfectly balanced... between doing work and pretending to do work. "To-Do-List-Application" is a fork — bro couldn't even build a TO DO LIST from scratch.
+"StudyNotion" — a "fully functional ed-tech platform" that's literally an EMPTY repo. Zero KB. The only thing it teaches is disappointment. "ml-web-app" has the description "blablablehbleh" — bro gave up on the description before the code. That's not a project, that's a Tuesday afternoon mistake you forgot to delete.
 
-Following 8 people, 2 follow back. Even your GitHub networking has a 75% rejection rate. No bio, no company, no commits in recent history. The account exists but the developer doesn't.
+9 forks, 9 originals. Half your GitHub is other people's work with your name on it. "To-Do-List-Application" is a FORK — you couldn't build a to-do list. The most basic app in programming history. Even a bootcamp dropout could do that blindfolded.
 
-**Verdict:** At least you showed up. Most people don't even make it to 18 repos. You just... didn't do anything with them.
+1 star across 18 repos. That's 0.055 stars per repo. Even rounding up that's still zero. Following 8 people, 2 follow back — a 75% rejection rate. No bio because what would it even say? "I fork repos and abandon them"?
+
+**Verdict:** Your GitHub is proof that creating an account and being a developer are two very different things.
+
+---
+
+Another example:
+
+**Arun Kumar** — bro built 12 repos and mass-produced mediocrity at scale
+
+"portfolio-website-v1", "portfolio-website-v2", "portfolio-v3" — three versions of a portfolio and NONE of them got him hired. "weather-app" with 0 stars — congratulations, you built what every tutorial teaches in hour 1 and somehow made it worse.
+
+All JavaScript. Every. Single. Repo. React, React, React. Bro discovered one framework and decided that's his entire personality now. 6 languages listed but 90% is just JavaScript wearing different hats.
+
+Last commit: 8 months ago. The code didn't die, YOU abandoned it. 47 followers but following 312 — that's not networking, that's digital begging.
+
+**Verdict:** Your GitHub is a museum of half-finished ambitions. Free admission, zero visitors.
 
 ### 2. Stalk / Surveillance Report
 
