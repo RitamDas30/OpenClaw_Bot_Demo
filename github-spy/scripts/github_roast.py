@@ -24,35 +24,39 @@ def detect_roast_ammo(profile: dict, repos: list, events: list) -> list[str]:
 
     if len(sorted_langs) == 1:
         lang = sorted_langs[0][0]
-        ammo.append(f"ONE-LANGUAGE LOYALIST: Only uses {lang}. Every single repo is {lang}. Monogamous with a programming language.")
+        ammo.append(f"ONE-LANGUAGE LOYALIST: Only uses {lang}. Every single repo is {lang}.")
     elif len(sorted_langs) >= 8:
         ammo.append(f"LANGUAGE HOARDER: Uses {len(sorted_langs)} different languages. Jack of all trades, master of none.")
-    elif sorted_langs and sorted_langs[0][1] >= len(repos) * 0.7:
+    elif sorted_langs and sorted_langs[0][1] >= len(repos) * 0.7 and len(repos) > 3:
         lang = sorted_langs[0][0]
-        ammo.append(f"LANGUAGE OBSESSION: {sorted_langs[0][1]} out of {len(repos)} repos are {lang}. Has a type.")
+        ammo.append(f"LANGUAGE OBSESSION: {sorted_langs[0][1]} out of {len(repos)} repos are {lang}.")
 
     # --- Fork ratio ---
     if len(forks) > len(original) and len(forks) > 3:
         ammo.append(f"FORK FARMER: {len(forks)} forks vs {len(original)} original repos. More forking than creating.")
+    elif len(forks) >= len(original) and len(forks) > 2:
+        ammo.append(f"FORK ADDICT: {len(forks)} forks, {len(original)} original. 50/50 split between own work and copy-paste.")
     elif len(forks) > 0 and len(original) == 0:
-        ammo.append(f"ZERO ORIGINAL WORK: All {len(forks)} repos are forks. Has never had an original thought on GitHub.")
+        ammo.append(f"ZERO ORIGINAL WORK: All {len(forks)} repos are forks. Not a single original thought.")
 
     # --- Star poverty ---
     total_stars = sum(r.get("stargazers_count", 0) for r in repos)
-    if total_stars == 0 and len(repos) > 5:
-        ammo.append(f"ZERO STARS: {len(repos)} repos and not a single star. Even bots have more recognition.")
+    if total_stars == 0 and len(repos) > 3:
+        ammo.append(f"ZERO STARS: {len(repos)} repos and not a single star. Even bots get more love.")
     elif total_stars < 5 and len(repos) > 10:
-        ammo.append(f"STAR DROUGHT: {len(repos)} repos, only {total_stars} total stars. The code is so mid even GitHub won't recommend it.")
+        ammo.append(f"STAR DROUGHT: {len(repos)} repos, only {total_stars} total stars.")
 
     # --- Follower/following ratio ---
     followers = profile.get("followers", 0)
     following = profile.get("following", 0)
     if following > 0 and followers == 0:
-        ammo.append(f"FOLLOWING {following} PEOPLE, 0 FOLLOW BACK: Networking level = invisible.")
+        ammo.append(f"FOLLOWING {following} PEOPLE, 0 FOLLOW BACK. Invisible on GitHub.")
     elif following > followers * 5 and following > 50:
-        ammo.append(f"DESPERATE RATIO: Following {following} people but only {followers} follow back. GitHub isn't Instagram bro.")
+        ammo.append(f"DESPERATE RATIO: Following {following} but only {followers} follow back.")
     elif followers > 1000 and following == 0:
-        ammo.append(f"CELEBRITY COMPLEX: {followers} followers, following 0 people. Too important to follow back.")
+        ammo.append(f"CELEBRITY COMPLEX: {followers} followers, following 0. Too important to follow back.")
+    elif followers < 5 and len(repos) > 10:
+        ammo.append(f"INVISIBLE: {len(repos)} repos but only {followers} followers. Nobody cares.")
 
     # --- README warriors / empty repos ---
     empty_repos = []
@@ -63,13 +67,12 @@ def detect_roast_ammo(profile: dict, repos: list, events: list) -> list[str]:
             empty_repos.append(r["name"])
         elif size < 5:
             readme_only.append(r["name"])
-
-    if len(empty_repos) >= 3:
-        names = ", ".join(empty_repos[:4])
-        ammo.append(f"GHOST REPOS: {len(empty_repos)} completely empty repos ({names}). Created them and ghosted.")
-    if len(readme_only) >= 3:
-        names = ", ".join(readme_only[:4])
-        ammo.append(f"README WARRIOR: {len(readme_only)} repos that are basically just README files ({names}). The documentation is the product.")
+    if empty_repos:
+        names = ", ".join(empty_repos[:5])
+        ammo.append(f"GHOST REPOS: {len(empty_repos)} completely empty repos ({names}).")
+    if readme_only:
+        names = ", ".join(readme_only[:5])
+        ammo.append(f"README WARRIOR: {len(readme_only)} repos that are just README files ({names}).")
 
     # --- Unfinished projects / graveyard ---
     now = datetime.now()
@@ -84,23 +87,20 @@ def detect_roast_ammo(profile: dict, repos: list, events: list) -> list[str]:
                     stale.append(r["name"])
             except (ValueError, TypeError):
                 pass
-    if len(stale) >= 5:
-        names = ", ".join(stale[:4])
-        ammo.append(f"PROJECT GRAVEYARD: {len(stale)} repos untouched for 1+ year ({names}...). Startup cemetery.")
-    elif len(stale) >= 3:
-        names = ", ".join(stale[:3])
-        ammo.append(f"ABANDONMENT ISSUES: {len(stale)} abandoned repos ({names}). Starts everything, finishes nothing.")
+    if stale:
+        names = ", ".join(stale[:5])
+        ammo.append(f"PROJECT GRAVEYARD: {len(stale)} repos untouched for 1+ year ({names}).")
 
     # --- Tutorial/clone repos ---
-    tutorial_keywords = ["tutorial", "follow-along", "course", "udemy", "learn", "practice", "exercise", "bootcamp", "clone", "copy"]
+    tutorial_keywords = ["tutorial", "follow-along", "course", "udemy", "learn", "practice", "exercise", "bootcamp", "clone", "copy", "demo", "sample", "example"]
     tutorial_repos = [r["name"] for r in original if any(kw in (r.get("name") or "").lower() or kw in (r.get("description") or "").lower() for kw in tutorial_keywords)]
-    if len(tutorial_repos) >= 3:
-        names = ", ".join(tutorial_repos[:4])
-        ammo.append(f"TUTORIAL COLLECTOR: {len(tutorial_repos)} repos from tutorials/courses ({names}). Learning everything except how to build something original.")
+    if tutorial_repos:
+        names = ", ".join(tutorial_repos[:5])
+        ammo.append(f"TUTORIAL COLLECTOR: {len(tutorial_repos)} tutorial/demo repos ({names}). Learning, never building.")
 
     # --- No bio ---
     if not profile.get("bio"):
-        ammo.append("NO BIO: Can't even describe themselves in one line. The mystery nobody asked for.")
+        ammo.append("NO BIO: Can't even write one line about themselves.")
 
     # --- Old account, low output ---
     created = profile.get("created_at", "")
@@ -109,9 +109,9 @@ def detect_roast_ammo(profile: dict, repos: list, events: list) -> list[str]:
             created_dt = datetime.fromisoformat(created.replace("Z", "+00:00"))
             years = (now.year - created_dt.year)
             if years >= 5 and len(original) < 5:
-                ammo.append(f"VETERAN GHOST: Account is {years} years old but only {len(original)} original repos. What have they been doing?")
+                ammo.append(f"VETERAN GHOST: Account is {years} years old but only {len(original)} original repos.")
             elif years >= 3 and total_stars == 0:
-                ammo.append(f"3+ YEARS, ZERO IMPACT: On GitHub since {created[:4]} with nothing to show for it.")
+                ammo.append(f"{years} YEARS ON GITHUB, ZERO STARS. What have they been doing?")
         except (ValueError, TypeError):
             pass
 
@@ -119,21 +119,21 @@ def detect_roast_ammo(profile: dict, repos: list, events: list) -> list[str]:
     push_events = [e for e in events if e.get("type") == "PushEvent"]
     total_commits = sum(len(e.get("payload", {}).get("commits", [])) for e in push_events)
     if len(events) > 0 and total_commits == 0:
-        ammo.append("ZERO COMMITS in recent activity. Ghost account vibes.")
+        ammo.append("ZERO COMMITS in recent activity. Ghost.")
     elif total_commits > 200:
-        ammo.append(f"COMMIT MACHINE: {total_commits} commits in recent history. Either a god or just pushing 'fix typo' 200 times.")
+        ammo.append(f"COMMIT MACHINE: {total_commits} recent commits. God or just 'fix typo' 200 times.")
 
     # --- Repo naming ---
     numbered = [r["name"] for r in original if any(r["name"].endswith(str(i)) for i in range(1, 10)) or "-v2" in r["name"] or "-v3" in r["name"]]
-    if len(numbered) >= 3:
+    if len(numbered) >= 2:
         names = ", ".join(numbered[:4])
-        ammo.append(f"VERSION HELL: Repos like {names}. Can't update existing code, just makes a new repo every time.")
+        ammo.append(f"VERSION HELL: Repos like {names}. Makes a new repo instead of updating.")
 
     # --- DSA grinder ---
     dsa_keywords = ["leetcode", "dsa", "competitive", "hackerrank", "codeforces", "algorithm", "data-structure", "cp-", "problem"]
     dsa_repos = [r["name"] for r in original if any(kw in (r.get("name") or "").lower() or kw in (r.get("description") or "").lower() for kw in dsa_keywords)]
-    if len(dsa_repos) >= 2 and len(original) - len(dsa_repos) < 3:
-        ammo.append(f"DSA GRINDER, NO PROJECTS: Repos are all competitive programming ({', '.join(dsa_repos[:3])}). Solved 500 problems but can't build an app.")
+    if dsa_repos and len(original) - len(dsa_repos) < 3:
+        ammo.append(f"DSA GRINDER, NO PROJECTS: All competitive programming ({', '.join(dsa_repos[:3])}). Solved 500 problems, can't build an app.")
 
     # --- "Impressive but..." ---
     if total_stars > 500 and followers > 100:
@@ -162,46 +162,123 @@ def main():
             langs[lang] = langs.get(lang, 0) + 1
     lang_str = ", ".join(f"{l} ({c})" for l, c in sorted(langs.items(), key=lambda x: -x[1])[:8])
 
-    # Top repos
-    sorted_repos = sorted(repos, key=lambda r: r.get("stargazers_count", 0), reverse=True)
-    repo_lines = []
-    for r in sorted_repos[:8]:
-        desc = (r.get("description") or "no description")[:50]
-        stars = r.get("stargazers_count", 0)
-        fork = " (FORK)" if r.get("fork") else ""
-        lang = r.get("language") or "?"
-        repo_lines.append(f"  - {r['name']}: {desc} [{lang}, {stars} stars]{fork}")
-
     total_stars = sum(r.get("stargazers_count", 0) for r in repos)
+
+    # ALL repos with full details (not just top 8)
+    repo_details = []
+    for r in sorted(repos, key=lambda r: r.get("stargazers_count", 0), reverse=True):
+        desc = r.get("description") or "no description"
+        stars = r.get("stargazers_count", 0)
+        fork = " [FORK]" if r.get("fork") else ""
+        lang = r.get("language") or "?"
+        size = r.get("size", 0)
+        topics = r.get("topics", [])
+        pushed = r.get("pushed_at", "")[:10]
+        size_label = "empty" if size == 0 else f"{size}KB"
+        topic_str = f" topics: {', '.join(topics)}" if topics else ""
+        repo_details.append(
+            f"  - {r['name']}: \"{desc}\" [{lang}, {stars}★, {size_label}, last push: {pushed}]{fork}{topic_str}"
+        )
+
+    # Silly/funny descriptions
+    silly_descs = []
+    for r in repos:
+        desc = r.get("description") or ""
+        if desc and len(desc) < 50 and any(c in desc.lower() for c in ["hehe", "lol", "blah", "test", "idk", "todo", "wip", "coming soon", "nothing", "just", "random", "bruh", "😂", "🚀", "💀"]):
+            silly_descs.append(f'  - {r["name"]}: "{desc}"')
+        elif desc and desc.strip().lower() in ["no description", ".", "..", "hi", "hello", "test", "asdf"]:
+            silly_descs.append(f'  - {r["name"]}: "{desc}"')
+
+    # Repos with no description at all
+    no_desc_repos = [r["name"] for r in repos if not r.get("description")]
+
+    # Recent commit messages from events (find funny/lazy ones)
+    commit_msgs = []
+    for e in events:
+        if e.get("type") == "PushEvent":
+            for c in e.get("payload", {}).get("commits", []):
+                msg = c.get("message", "").split("\n")[0][:80]
+                commit_msgs.append(msg)
+
+    # Find lazy/funny commit messages
+    lazy_commits = []
+    lazy_keywords = ["fix", "update", "test", "wip", "initial commit", "first commit", "asdf", ".", "..", "idk", "stuff", "changes", "misc", "tmp", "todo", "oops", "typo", "lol", "bruh"]
+    for msg in commit_msgs:
+        if msg.lower().strip() in lazy_keywords or len(msg) < 4:
+            lazy_commits.append(f'  - "{msg}"')
+        elif any(kw == msg.lower().strip() for kw in lazy_keywords):
+            lazy_commits.append(f'  - "{msg}"')
+    # Also grab any particularly funny ones
+    for msg in commit_msgs:
+        if any(w in msg.lower() for w in ["hehe", "blah", "lol", "bruh", "😂", "💀", "please work", "why", "help", "idk", "fuck", "shit"]):
+            entry = f'  - "{msg}"'
+            if entry not in lazy_commits:
+                lazy_commits.append(entry)
 
     # Detect roastable patterns
     ammo = detect_roast_ammo(profile, repos, events)
 
+    # === OUTPUT ===
     print(f"=== ROAST TARGET: {name} (@{username}) ===")
-    print(f"Bio: {profile.get('bio') or 'No bio'}")
-    print(f"Account: {profile.get('created_at', '')[:10]}")
-    print(f"Repos: {profile.get('public_repos', 0)} ({len(original)} original, {len(forks)} forks)")
-    print(f"Stars: {total_stars} | Followers: {profile.get('followers', 0)} | Following: {profile.get('following', 0)}")
-    print(f"Company: {profile.get('company') or 'None'} | Location: {profile.get('location') or 'Unknown'}")
-    print(f"Languages: {lang_str or 'None'}")
+    print(f"Real name: {name}")
+    print(f"Bio: {profile.get('bio') or '[NO BIO]'}")
+    print(f"Account created: {profile.get('created_at', '')[:10]}")
+    print(f"Public repos: {profile.get('public_repos', 0)} ({len(original)} original, {len(forks)} forks)")
+    print(f"Total stars: {total_stars}")
+    print(f"Followers: {profile.get('followers', 0)} | Following: {profile.get('following', 0)}")
+    print(f"Company: {profile.get('company') or '[None]'}")
+    print(f"Location: {profile.get('location') or '[Unknown]'}")
+    print(f"Languages: {lang_str or '[None]'}")
     print()
-    print("REPOS:")
-    print("\n".join(repo_lines) if repo_lines else "  No repos found")
+
+    print("ALL REPOS (with details):")
+    for line in repo_details[:15]:
+        print(line)
+    if len(repo_details) > 15:
+        print(f"  ... and {len(repo_details) - 15} more")
     print()
-    print("ROAST AMMUNITION (use these in the roast):")
+
+    if no_desc_repos:
+        print(f"REPOS WITH NO DESCRIPTION ({len(no_desc_repos)}):")
+        print(f"  {', '.join(no_desc_repos[:10])}")
+        print()
+
+    if silly_descs:
+        print("SILLY/FUNNY DESCRIPTIONS (roast these!):")
+        for s in silly_descs[:5]:
+            print(s)
+        print()
+
+    if lazy_commits:
+        print("LAZY/FUNNY COMMIT MESSAGES (roast these!):")
+        for c in lazy_commits[:8]:
+            print(c)
+        print()
+
+    if commit_msgs:
+        print(f"RECENT COMMIT MESSAGES (sample of {min(len(commit_msgs), 10)}):")
+        for msg in commit_msgs[:10]:
+            print(f'  - "{msg}"')
+        print()
+
+    print("ROAST AMMUNITION:")
     for i, a in enumerate(ammo, 1):
         print(f"  {i}. {a}")
     if not ammo:
-        print("  Profile is too generic to find specific weaknesses. Roast the blandness itself.")
+        print("  No specific weaknesses found. Roast the blandness itself.")
     print()
-    print("=== INSTRUCTIONS ===")
-    print(f"Write a LONG brutal roast of {name} (@{username}). 200-300 words, multiple paragraphs.")
-    print(f"1. Start: '{name} — [devastating one-liner]'")
-    print(f"2. Paragraph roasting their repos BY NAME — quote specific repo names and descriptions")
-    print(f"3. Paragraph roasting their stats — exact star count, follower ratio, languages")
-    print(f"4. Paragraph expanding EVERY ammunition point above into a joke")
-    print(f"5. End with 'Verdict:' — a backhanded compliment that sounds nice but isn't")
-    print(f"CRITICAL: Every line must reference ACTUAL data above. Never be generic.")
+
+    print("=== ROAST INSTRUCTIONS ===")
+    print(f"Write a BRUTAL personalized roast of {name} (@{username}).")
+    print(f"STRUCTURE (follow exactly):")
+    print(f"  1. Start: '{name} — [devastating one-liner about their most roastable trait]'")
+    print(f"  2. Roast their repos BY NAME. Quote repo names, descriptions, and commit messages from above.")
+    print(f"  3. Roast their stats: {total_stars} stars, {profile.get('followers',0)} followers, {len(repos)} repos.")
+    print(f"  4. Use EVERY ammunition point. Expand each into a savage joke.")
+    print(f"  5. If there are silly descriptions or lazy commits, QUOTE THEM in the roast.")
+    print(f"  6. End with 'Verdict:' — a backhanded compliment.")
+    print(f"Write 200-300 words. Every sentence must reference ACTUAL data from above.")
+    print(f"DO NOT make up repos or stats. Only use what's listed above.")
 
 
 if __name__ == "__main__":
