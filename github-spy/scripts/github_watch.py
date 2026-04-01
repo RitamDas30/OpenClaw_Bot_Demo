@@ -18,6 +18,8 @@ from github_api import GitHubApiError, TOKEN, api_get
 
 STATE_DIR = Path.home() / ".openclaw" / "github-spy"
 COMMIT_FILES_CACHE: dict[tuple[str, str], list[str]] = {}
+REPO_META_CACHE: dict[str, dict] = {}
+COMPARE_CACHE: dict[tuple[str, str, str], dict] = {}
 RATE_LIMIT_RESET_EPOCH = 0
 
 
@@ -115,16 +117,80 @@ def fetch_commit_files(repo: str, sha: str, max_files: int = 8) -> list[str]:
     return trimmed
 
 
+def fetch_repo_meta(repo: str) -> dict:
+    if repo in REPO_META_CACHE:
+        return REPO_META_CACHE[repo]
+    # Avoid extra API pressure when unauthenticated (60 req/hour).
+    if not TOKEN:
+        return {}
+    try:
+        status, data, _ = api_get(f"/repos/{repo}", timeout=10)
+    except GitHubApiError:
+        return {}
+    if status != 200 or not isinstance(data, dict):
+        return {}
+    meta = {
+        "language": data.get("language"),
+        "stars": data.get("stargazers_count"),
+        "default_branch": data.get("default_branch"),
+    }
+    REPO_META_CACHE[repo] = meta
+    return meta
+
+
+def fetch_compare(repo: str, before: str, head: str) -> dict:
+    key = (repo, before, head)
+    if key in COMPARE_CACHE:
+        return COMPARE_CACHE[key]
+    if not TOKEN or not before or not head:
+        return {}
+    try:
+        status, data, _ = api_get(f"/repos/{repo}/compare/{before}...{head}", timeout=12)
+    except GitHubApiError:
+        return {}
+    if status != 200 or not isinstance(data, dict):
+        return {}
+    commits = []
+    for item in data.get("commits", [])[:3]:
+        sha = (item.get("sha") or "")[:7]
+        msg = (
+            item.get("commit", {})
+            .get("message", "")
+            .split("\n")[0]
+            .strip()[:90]
+        )
+        if sha or msg:
+            commits.append({"sha": sha, "msg": msg})
+    files = [f.get("filename", "") for f in data.get("files", []) if f.get("filename")]
+    result = {
+        "commits": commits,
+        "files": files[:8],
+        "additions": data.get("total_commits") and sum(f.get("additions", 0) for f in data.get("files", [])),
+        "deletions": data.get("total_commits") and sum(f.get("deletions", 0) for f in data.get("files", [])),
+    }
+    COMPARE_CACHE[key] = result
+    return result
+
+
 def format_event(event: dict) -> str | None:
     etype = event.get("type", "")
     actor = event.get("actor", {}).get("login", "?")
     repo = event.get("repo", {}).get("name", "?")
+    payload = event.get("payload", {})
+    repo_meta = fetch_repo_meta(repo)
+    language = repo_meta.get("language")
+    lang_part = f" [{language}]" if language else ""
 
     if etype == "PushEvent":
-        commits = event.get("payload", {}).get("commits", [])
-        commit_count = len(commits) or event.get("payload", {}).get("size", 0)
-        branch = event.get("payload", {}).get("ref", "").replace("refs/heads/", "")
-        lines = [f"🔥 PUSH by {actor} to {repo} ({branch}) - {commit_count} commit(s):"]
+        commits = payload.get("commits", [])
+        commit_count = len(commits) or payload.get("size", 0)
+        branch = payload.get("ref", "").replace("refs/heads/", "")
+        before = payload.get("before", "")
+        head = payload.get("head", "")
+        distinct_count = payload.get("distinct_size")
+        lines = [f"🔥 PUSH by {actor} to {repo}{lang_part} ({branch}) - {commit_count} commit(s):"]
+        if distinct_count and distinct_count != commit_count:
+            lines.append(f"  distinct commits: {distinct_count}")
         for c in commits[:3]:
             msg = c.get("message", "").split("\n")[0][:80]
             short_sha = (c.get("sha") or "")[:7]
@@ -137,67 +203,101 @@ def format_event(event: dict) -> str | None:
                     lines.append(f"    files: {file_preview}")
                     if len(files) > 4:
                         lines.append(f"    ... and {len(files) - 4} more file(s)")
+        if not commits and before and head:
+            compare = fetch_compare(repo, before, head)
+            compare_commits = compare.get("commits", [])
+            compare_files = compare.get("files", [])
+            if compare_commits:
+                lines.append("  latest commits:")
+                for entry in compare_commits:
+                    lines.append(f"    {entry.get('sha', '')} {entry.get('msg', '')}".rstrip())
+            if compare_files:
+                file_preview = ", ".join(compare_files[:4])
+                lines.append(f"  files: {file_preview}")
+                if len(compare_files) > 4:
+                    lines.append(f"  ... and {len(compare_files) - 4} more file(s)")
+            additions = compare.get("additions")
+            deletions = compare.get("deletions")
+            if isinstance(additions, int) and isinstance(deletions, int):
+                lines.append(f"  diff stats: +{additions} / -{deletions}")
         if commit_count > 3 and commits:
             lines.append(f"  ... and {commit_count - 3} more")
         if commit_count > 0 and not commits:
             lines.append("  Commit metadata not included in this public event payload.")
+        if before and head:
+            lines.append(f"  compare: https://github.com/{repo}/compare/{before[:7]}...{head[:7]}")
         return "\n".join(lines)
     elif etype == "ReleaseEvent":
-        tag = event.get("payload", {}).get("release", {}).get("tag_name", "?")
+        tag = payload.get("release", {}).get("tag_name", "?")
         return f"🚀 NEW RELEASE on {repo}: {tag} by {actor}"
     elif etype == "IssuesEvent":
-        action = event.get("payload", {}).get("action", "opened")
-        issue = event.get("payload", {}).get("issue", {})
+        action = payload.get("action", "opened")
+        issue = payload.get("issue", {})
         if action == "opened":
             return f"🐛 NEW ISSUE #{issue.get('number', '?')} on {repo}: {issue.get('title', '')} (by {actor})"
     elif etype == "PullRequestEvent":
-        action = event.get("payload", {}).get("action", "opened")
-        pr = event.get("payload", {}).get("pull_request", {})
+        action = payload.get("action", "opened")
+        pr = payload.get("pull_request", {})
         number = pr.get("number", "?")
         title = pr.get("title", "")
-        return f"📝 PR {action.upper()} #{number} on {repo}: {title} (by {actor})"
+        base = pr.get("base", {}).get("ref", "?")
+        head_ref = pr.get("head", {}).get("ref", "?")
+        changed = pr.get("changed_files")
+        additions = pr.get("additions")
+        deletions = pr.get("deletions")
+        draft = pr.get("draft")
+        lines = [f"📝 PR {action.upper()} #{number} on {repo}{lang_part}: {title} (by {actor})"]
+        lines.append(f"  branch: {head_ref} → {base}")
+        if isinstance(changed, int) and isinstance(additions, int) and isinstance(deletions, int):
+            lines.append(f"  changes: {changed} files, +{additions} / -{deletions}")
+        if isinstance(draft, bool):
+            lines.append(f"  draft: {'yes' if draft else 'no'}")
+        url = pr.get("html_url")
+        if url:
+            lines.append(f"  link: {url}")
+        return "\n".join(lines)
     elif etype == "WatchEvent":
         return f"⭐ {actor} starred {repo}"
     elif etype == "CreateEvent":
-        ref_type = event.get("payload", {}).get("ref_type", "")
-        ref = event.get("payload", {}).get("ref", "")
+        ref_type = payload.get("ref_type", "")
+        ref = payload.get("ref", "")
         if ref_type == "repository":
             return f"🆕 {actor} created new repo {repo}"
         elif ref:
             return f"🔀 {actor} created {ref_type} '{ref}' on {repo}"
     elif etype == "ForkEvent":
-        forkee = event.get("payload", {}).get("forkee", {}).get("full_name", "?")
+        forkee = payload.get("forkee", {}).get("full_name", "?")
         return f"🍴 {actor} forked {repo} → {forkee}"
     elif etype == "DeleteEvent":
-        ref_type = event.get("payload", {}).get("ref_type", "")
-        ref = event.get("payload", {}).get("ref", "")
+        ref_type = payload.get("ref_type", "")
+        ref = payload.get("ref", "")
         return f"🗑️ {actor} deleted {ref_type} '{ref}' on {repo}"
     elif etype == "IssueCommentEvent":
-        action = event.get("payload", {}).get("action", "created")
-        issue = event.get("payload", {}).get("issue", {})
-        comment = event.get("payload", {}).get("comment", {})
+        action = payload.get("action", "created")
+        issue = payload.get("issue", {})
+        comment = payload.get("comment", {})
         snippet = (comment.get("body") or "").strip().split("\n")[0][:80]
         return (
             f"💬 ISSUE COMMENT ({action}) by {actor} on {repo} "
             f"#{issue.get('number', '?')}: {snippet or '[no text]'}"
         )
     elif etype == "PullRequestReviewCommentEvent":
-        action = event.get("payload", {}).get("action", "created")
-        pr = event.get("payload", {}).get("pull_request", {})
-        comment = event.get("payload", {}).get("comment", {})
+        action = payload.get("action", "created")
+        pr = payload.get("pull_request", {})
+        comment = payload.get("comment", {})
         snippet = (comment.get("body") or "").strip().split("\n")[0][:80]
         return (
             f"🗨️ PR REVIEW COMMENT ({action}) by {actor} on {repo} "
             f"PR #{pr.get('number', '?')}: {snippet or '[no text]'}"
         )
     elif etype == "PullRequestReviewEvent":
-        action = event.get("payload", {}).get("action", "submitted")
-        review = event.get("payload", {}).get("review", {})
+        action = payload.get("action", "submitted")
+        review = payload.get("review", {})
         state = review.get("state", "unknown")
-        pr = event.get("payload", {}).get("pull_request", {})
+        pr = payload.get("pull_request", {})
         return f"✅ PR REVIEW ({action}/{state}) by {actor} on {repo} PR #{pr.get('number', '?')}"
     elif etype == "CommitCommentEvent":
-        comment = event.get("payload", {}).get("comment", {})
+        comment = payload.get("comment", {})
         snippet = (comment.get("body") or "").strip().split("\n")[0][:80]
         return f"🧾 COMMIT COMMENT by {actor} on {repo}: {snippet or '[no text]'}"
     return None
