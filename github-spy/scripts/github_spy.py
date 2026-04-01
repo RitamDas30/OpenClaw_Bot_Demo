@@ -16,6 +16,7 @@ from datetime import datetime
 
 from github_api import GitHubApiError, fetch_profile, fetch_profile_events, fetch_user_parallel, parse_username
 from github_watch import check_target, init_target, list_watch_targets, parse_target
+from telegram_notifier import add_subscriber, list_subscribers, remove_subscriber
 
 
 def _extract_username(text: str) -> str:
@@ -37,12 +38,20 @@ def _detect_mode(text: str) -> str:
     lowered = text.lower()
     if "roast" in lowered:
         return "roast"
+    if any(word in lowered for word in ("summary", "summarize", "strength", "skills", "stack")):
+        return "summary"
     if any(word in lowered for word in ("watch", "track", "monitor", "24x7", "24*7")):
         return "watch-add"
     if any(word in lowered for word in ("updates", "new activity", "check activity", "check watch")):
         return "watch-check"
     if any(word in lowered for word in ("watch list", "list watches", "tracked users")):
         return "watch-list"
+    if any(word in lowered for word in ("unsubscribe", "remove chat")):
+        return "notify-remove"
+    if any(word in lowered for word in ("subscribe", "notify me", "register chat")):
+        return "notify-add"
+    if any(word in lowered for word in ("notify list", "subscribers")):
+        return "notify-list"
     return "spy"
 
 
@@ -153,6 +162,41 @@ def _build_roast(username: str, profile: dict, repos: list[dict], events: list[d
     return "\n".join(roast_lines)
 
 
+def _build_summary(username: str, profile: dict, repos: list[dict], events: list[dict]) -> str:
+    langs = Counter((repo.get("language") or "Unknown") for repo in repos if repo.get("language"))
+    top_langs = [name for name, _ in langs.most_common(3)]
+    total_stars = sum(repo.get("stargazers_count", 0) for repo in repos)
+    push_events = [event for event in events if event.get("type") == "PushEvent"]
+    prs_opened = sum(
+        1
+        for event in events
+        if event.get("type") == "PullRequestEvent" and event.get("payload", {}).get("action") == "opened"
+    )
+    active_days = len({event.get("created_at", "")[:10] for event in events if event.get("created_at")})
+
+    strengths = []
+    if top_langs:
+        strengths.append(f"Primary stack: {', '.join(top_langs)}")
+    if total_stars >= 100:
+        strengths.append(f"Strong OSS signal: {total_stars} total stars")
+    if len(push_events) >= 10:
+        strengths.append(f"Active contributor: {len(push_events)} push events in recent public window")
+    if prs_opened >= 3:
+        strengths.append(f"Collaboration signal: opened {prs_opened} PRs recently")
+    if active_days >= 8:
+        strengths.append(f"Consistency signal: active on {active_days} distinct recent days")
+
+    if not strengths:
+        strengths.append("Early-stage public profile; limited activity data to infer strengths confidently.")
+
+    lines = [f"Summary for @{username}"]
+    lines.append(f"Name: {profile.get('name') or profile.get('login')}")
+    lines.append(f"Followers: {profile.get('followers', 0)} | Public repos: {profile.get('public_repos', 0)}")
+    lines.append("Strength signals:")
+    lines.extend(f"- {item}" for item in strengths)
+    return "\n".join(lines)
+
+
 def _watch_add(username_or_target: str) -> str:
     target = parse_target(username_or_target)
     init_target(target)
@@ -193,6 +237,42 @@ def _watch_list() -> str:
     return "\n".join(lines)
 
 
+def _parse_chat_id(raw: str) -> str | None:
+    match = re.search(r"-?\d{6,}", raw)
+    if not match:
+        return None
+    return match.group(0)
+
+
+def _notify_add(raw: str) -> str:
+    chat_id = _parse_chat_id(raw)
+    if not chat_id:
+        return "ERROR: Missing chat id. Use: subscribe <chat_id> (from @userinfobot)."
+    created = add_subscriber(chat_id)
+    if created:
+        return f"Telegram subscriber added: {chat_id}"
+    return f"Telegram subscriber already exists: {chat_id}"
+
+
+def _notify_remove(raw: str) -> str:
+    chat_id = _parse_chat_id(raw)
+    if not chat_id:
+        return "ERROR: Missing chat id. Use: unsubscribe <chat_id>"
+    removed = remove_subscriber(chat_id)
+    if removed:
+        return f"Telegram subscriber removed: {chat_id}"
+    return f"No such Telegram subscriber: {chat_id}"
+
+
+def _notify_list() -> str:
+    subs = list_subscribers()
+    if not subs:
+        return "No Telegram subscribers registered."
+    lines = ["Telegram subscribers:"]
+    lines.extend(f"- {sid}" for sid in subs)
+    return "\n".join(lines)
+
+
 def main() -> None:
     if len(sys.argv) < 2:
         print("ERROR: Missing input. Use: github_spy.py <mode username> or github_spy.py '<message>'")
@@ -200,10 +280,10 @@ def main() -> None:
 
     raw = " ".join(sys.argv[1:]).strip()
     words = raw.split()
-    if len(words) >= 2 and words[0].lower() in {"roast", "spy", "watch-add"}:
+    if len(words) >= 2 and words[0].lower() in {"roast", "spy", "summary", "watch-add", "notify-add", "notify-remove"}:
         mode = words[0].lower()
         username_input = " ".join(words[1:])
-    elif len(words) >= 1 and words[0].lower() in {"watch-check", "watch-list"}:
+    elif len(words) >= 1 and words[0].lower() in {"watch-check", "watch-list", "notify-list"}:
         mode = words[0].lower()
         username_input = ""
     else:
@@ -215,6 +295,15 @@ def main() -> None:
         return
     if mode == "watch-check":
         print(_watch_check())
+        return
+    if mode == "notify-list":
+        print(_notify_list())
+        return
+    if mode == "notify-add":
+        print(_notify_add(raw))
+        return
+    if mode == "notify-remove":
+        print(_notify_remove(raw))
         return
 
     try:
@@ -258,6 +347,9 @@ def main() -> None:
 
     if mode == "roast":
         print(_build_roast(username, profile, repos, events))
+        return
+    if mode == "summary":
+        print(_build_summary(username, profile, repos, events))
         return
 
     print(_build_spy_report(username, profile, events))

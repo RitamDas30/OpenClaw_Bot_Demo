@@ -13,9 +13,10 @@ State is stored in ~/.openclaw/github-spy/<target>.json
 import json
 import sys
 from pathlib import Path
-from github_api import TOKEN
+from github_api import GitHubApiError, TOKEN, api_get
 
 STATE_DIR = Path.home() / ".openclaw" / "github-spy"
+COMMIT_FILES_CACHE: dict[tuple[str, str], list[str]] = {}
 
 
 def load_state(target: str) -> dict:
@@ -70,6 +71,22 @@ def api_get_with_etag(path: str, etag: str | None = None) -> tuple[int, dict | l
         return 0, None, None
 
 
+def fetch_commit_files(repo: str, sha: str, max_files: int = 8) -> list[str]:
+    key = (repo, sha)
+    if key in COMMIT_FILES_CACHE:
+        return COMMIT_FILES_CACHE[key]
+    try:
+        status, data, _ = api_get(f"/repos/{repo}/commits/{sha}", timeout=10)
+    except GitHubApiError:
+        return []
+    if status != 200 or not isinstance(data, dict):
+        return []
+    files = [f.get("filename", "") for f in data.get("files", []) if f.get("filename")]
+    trimmed = files[:max_files]
+    COMMIT_FILES_CACHE[key] = trimmed
+    return trimmed
+
+
 def format_event(event: dict) -> str | None:
     etype = event.get("type", "")
     actor = event.get("actor", {}).get("login", "?")
@@ -77,13 +94,25 @@ def format_event(event: dict) -> str | None:
 
     if etype == "PushEvent":
         commits = event.get("payload", {}).get("commits", [])
+        commit_count = len(commits) or event.get("payload", {}).get("size", 0)
         branch = event.get("payload", {}).get("ref", "").replace("refs/heads/", "")
-        lines = [f"🔥 PUSH by {actor} to {repo} ({branch}) - {len(commits)} commit(s):"]
+        lines = [f"🔥 PUSH by {actor} to {repo} ({branch}) - {commit_count} commit(s):"]
         for c in commits[:3]:
-            msg = c["message"].split("\n")[0][:80]
-            lines.append(f"  {c['sha'][:7]} {msg}")
-        if len(commits) > 3:
-            lines.append(f"  ... and {len(commits) - 3} more")
+            msg = c.get("message", "").split("\n")[0][:80]
+            short_sha = (c.get("sha") or "")[:7]
+            lines.append(f"  {short_sha} {msg}")
+            full_sha = c.get("sha")
+            if full_sha:
+                files = fetch_commit_files(repo, full_sha)
+                if files:
+                    file_preview = ", ".join(files[:4])
+                    lines.append(f"    files: {file_preview}")
+                    if len(files) > 4:
+                        lines.append(f"    ... and {len(files) - 4} more file(s)")
+        if commit_count > 3 and commits:
+            lines.append(f"  ... and {commit_count - 3} more")
+        if commit_count > 0 and not commits:
+            lines.append("  Commit metadata not included in this public event payload.")
         return "\n".join(lines)
     elif etype == "ReleaseEvent":
         tag = event.get("payload", {}).get("release", {}).get("tag_name", "?")
@@ -96,8 +125,9 @@ def format_event(event: dict) -> str | None:
     elif etype == "PullRequestEvent":
         action = event.get("payload", {}).get("action", "opened")
         pr = event.get("payload", {}).get("pull_request", {})
-        if action == "opened":
-            return f"📝 NEW PR #{pr.get('number', '?')} on {repo}: {pr.get('title', '')} (by {actor})"
+        number = pr.get("number", "?")
+        title = pr.get("title", "")
+        return f"📝 PR {action.upper()} #{number} on {repo}: {title} (by {actor})"
     elif etype == "WatchEvent":
         return f"⭐ {actor} starred {repo}"
     elif etype == "CreateEvent":
@@ -114,6 +144,34 @@ def format_event(event: dict) -> str | None:
         ref_type = event.get("payload", {}).get("ref_type", "")
         ref = event.get("payload", {}).get("ref", "")
         return f"🗑️ {actor} deleted {ref_type} '{ref}' on {repo}"
+    elif etype == "IssueCommentEvent":
+        action = event.get("payload", {}).get("action", "created")
+        issue = event.get("payload", {}).get("issue", {})
+        comment = event.get("payload", {}).get("comment", {})
+        snippet = (comment.get("body") or "").strip().split("\n")[0][:80]
+        return (
+            f"💬 ISSUE COMMENT ({action}) by {actor} on {repo} "
+            f"#{issue.get('number', '?')}: {snippet or '[no text]'}"
+        )
+    elif etype == "PullRequestReviewCommentEvent":
+        action = event.get("payload", {}).get("action", "created")
+        pr = event.get("payload", {}).get("pull_request", {})
+        comment = event.get("payload", {}).get("comment", {})
+        snippet = (comment.get("body") or "").strip().split("\n")[0][:80]
+        return (
+            f"🗨️ PR REVIEW COMMENT ({action}) by {actor} on {repo} "
+            f"PR #{pr.get('number', '?')}: {snippet or '[no text]'}"
+        )
+    elif etype == "PullRequestReviewEvent":
+        action = event.get("payload", {}).get("action", "submitted")
+        review = event.get("payload", {}).get("review", {})
+        state = review.get("state", "unknown")
+        pr = event.get("payload", {}).get("pull_request", {})
+        return f"✅ PR REVIEW ({action}/{state}) by {actor} on {repo} PR #{pr.get('number', '?')}"
+    elif etype == "CommitCommentEvent":
+        comment = event.get("payload", {}).get("comment", {})
+        snippet = (comment.get("body") or "").strip().split("\n")[0][:80]
+        return f"🧾 COMMIT COMMENT by {actor} on {repo}: {snippet or '[no text]'}"
     return None
 
 

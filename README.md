@@ -125,6 +125,9 @@ Open your Telegram bot and send:
 - `watch torvalds/linux` — start tracking a repo
 - `check watch` — check all tracked targets now
 - `list watches` — list tracked targets
+- `summary torvalds` — profile strengths (stack, signals, activity)
+- `subscribe <chat_id>` — register Telegram chat for push alerts
+- `notify list` — list registered Telegram chats
 
 For 24x7 monitoring on your local machine:
 
@@ -132,6 +135,8 @@ For 24x7 monitoring on your local machine:
 cd ~/.openclaw/workspace/skills/github-spy
 python3 scripts/github_watch_daemon.py --interval 120
 ```
+
+Get your `chat_id` from Telegram bot `@userinfobot`.
 
 ## Project Structure
 

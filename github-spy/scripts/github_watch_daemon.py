@@ -13,6 +13,7 @@ import time
 from datetime import datetime, timezone
 
 from github_watch import check_target, list_watch_targets
+from telegram_notifier import list_subscribers, push_broadcast
 
 
 def _now_utc() -> str:
@@ -22,6 +23,12 @@ def _now_utc() -> str:
 def run_loop(interval_seconds: int) -> int:
     print(f"[{_now_utc()}] GitHub Spy daemon started. interval={interval_seconds}s")
     print(f"[{_now_utc()}] Press Ctrl+C to stop.")
+    subscribers = list_subscribers()
+    if subscribers:
+        print(f"[{_now_utc()}] Telegram push enabled for {len(subscribers)} subscriber(s).")
+    else:
+        print(f"[{_now_utc()}] Telegram push disabled (no subscribers registered).")
+        print(f"[{_now_utc()}] Register once from Telegram chat: subscribe <your_chat_id>")
     while True:
         targets = list_watch_targets()
         if not targets:
@@ -31,10 +38,15 @@ def run_loop(interval_seconds: int) -> int:
         for target in targets:
             alerts = check_target(target, emit_output=False)
             if alerts:
-                print(f"\n=== 🚨 NEW ACTIVITY for {target} ({_now_utc()}) ===")
+                header = f"=== 🚨 NEW ACTIVITY for {target} ({_now_utc()}) ==="
+                print(f"\n{header}")
                 for alert in alerts:
                     print(alert)
                     print()
+                message = "\n".join([header, *alerts])
+                sent, failed = push_broadcast(message)
+                if sent or failed:
+                    print(f"[{_now_utc()}] Telegram push: sent={sent}, failed={failed}")
         time.sleep(interval_seconds)
 
 
