@@ -193,10 +193,22 @@ def parse_target(raw: str) -> str:
 def list_watch_targets() -> list[str]:
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     targets = []
+    reserved = {"target_subscribers", "telegram_subscribers"}
     for file in STATE_DIR.glob("*.json"):
         if file.parent != STATE_DIR:
             continue
-        targets.append(file.stem.replace("__", "/"))
+        stem = file.stem
+        if stem in reserved:
+            continue
+        try:
+            payload = json.loads(file.read_text())
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(payload, dict):
+            continue
+        if "seen_ids" not in payload or "etag" not in payload:
+            continue
+        targets.append(stem.replace("__", "/"))
     return sorted(targets)
 
 

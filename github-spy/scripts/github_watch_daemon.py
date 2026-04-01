@@ -13,7 +13,7 @@ import time
 from datetime import datetime, timezone
 
 from github_watch import check_target, list_watch_targets
-from telegram_notifier import list_subscribers, push_broadcast
+from telegram_notifier import list_subscribers, push_to_target
 
 
 def _now_utc() -> str:
@@ -25,10 +25,10 @@ def run_loop(interval_seconds: int) -> int:
     print(f"[{_now_utc()}] Press Ctrl+C to stop.")
     subscribers = list_subscribers()
     if subscribers:
-        print(f"[{_now_utc()}] Telegram push enabled for {len(subscribers)} subscriber(s).")
+        print(f"[{_now_utc()}] Telegram fallback broadcast enabled for {len(subscribers)} subscriber(s).")
     else:
-        print(f"[{_now_utc()}] Telegram push disabled (no subscribers registered).")
-        print(f"[{_now_utc()}] Register once from Telegram chat: subscribe <your_chat_id>")
+        print(f"[{_now_utc()}] Telegram broadcast subscribers: none.")
+    print(f"[{_now_utc()}] Target-specific Telegram delivery uses auto-linked watch chat ids.")
     while True:
         targets = list_watch_targets()
         if not targets:
@@ -44,7 +44,7 @@ def run_loop(interval_seconds: int) -> int:
                     print(alert)
                     print()
                 message = "\n".join([header, *alerts])
-                sent, failed = push_broadcast(message)
+                sent, failed = push_to_target(target, message)
                 if sent or failed:
                     print(f"[{_now_utc()}] Telegram push: sent={sent}, failed={failed}")
         time.sleep(interval_seconds)

@@ -16,7 +16,13 @@ from datetime import datetime
 
 from github_api import GitHubApiError, fetch_profile, fetch_profile_events, fetch_user_parallel, parse_username
 from github_watch import check_target, init_target, list_watch_targets, parse_target
-from telegram_notifier import add_subscriber, list_subscribers, remove_subscriber
+from telegram_notifier import (
+    add_subscriber,
+    add_target_subscriber,
+    get_latest_telegram_chat_id,
+    list_subscribers,
+    remove_subscriber,
+)
 
 
 def _extract_username(text: str) -> str:
@@ -200,11 +206,23 @@ def _build_summary(username: str, profile: dict, repos: list[dict], events: list
 def _watch_add(username_or_target: str) -> str:
     target = parse_target(username_or_target)
     init_target(target)
-    return (
-        f"Watch added: {target}\n"
-        "24x7 mode is supported via daemon:\n"
-        "python3 scripts/github_watch_daemon.py --interval 120"
+    lines = [f"Watch added: {target}"]
+
+    auto_chat_id = get_latest_telegram_chat_id()
+    if auto_chat_id and add_target_subscriber(target, auto_chat_id):
+        lines.append(f"Auto-linked Telegram chat: {auto_chat_id}")
+    elif auto_chat_id:
+        lines.append(f"Telegram chat already linked: {auto_chat_id}")
+    else:
+        lines.append("Could not auto-detect Telegram chat id. Use: subscribe <chat_id>")
+
+    lines.extend(
+        [
+            "24x7 mode is supported via daemon:",
+            "python3 scripts/github_watch_daemon.py --interval 120",
+        ]
     )
+    return "\n".join(lines)
 
 
 def _watch_check() -> str:
