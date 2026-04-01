@@ -13,7 +13,7 @@ State is stored in ~/.openclaw/github-spy/<target>.json
 import json
 import sys
 from pathlib import Path
-from github_api import api_get, TOKEN
+from github_api import TOKEN
 
 STATE_DIR = Path.home() / ".openclaw" / "github-spy"
 
@@ -132,7 +132,17 @@ def parse_target(raw: str) -> str:
     return parts[0].lower()
 
 
-def check_target(target: str):
+def list_watch_targets() -> list[str]:
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    targets = []
+    for file in STATE_DIR.glob("*.json"):
+        if file.parent != STATE_DIR:
+            continue
+        targets.append(file.stem.replace("__", "/"))
+    return sorted(targets)
+
+
+def check_target(target: str, emit_output: bool = True) -> list[str]:
     state = load_state(target)
 
     if "/" in target:
@@ -143,11 +153,11 @@ def check_target(target: str):
     status, events, new_etag = api_get_with_etag(api_path, state.get("etag"))
 
     if status == 304:
-        return
+        return []
     if status != 200 or not events:
-        if status == 404:
+        if emit_output and status == 404:
             print(f"ERROR: Target '{target}' not found on GitHub.")
-        return
+        return []
 
     state["etag"] = new_etag
     seen = set(state.get("seen_ids", []))
@@ -165,11 +175,12 @@ def check_target(target: str):
     state["seen_ids"] = list(seen)
     save_state(target, state)
 
-    if new_alerts:
+    if emit_output and new_alerts:
         print(f"=== 🚨 NEW ACTIVITY for {target} ===")
         for alert in new_alerts:
             print(alert)
             print()
+    return new_alerts
 
 
 def init_target(target: str):
@@ -201,16 +212,13 @@ def show_status(target: str):
 
 
 def list_watches():
-    STATE_DIR.mkdir(parents=True, exist_ok=True)
-    watches = list(STATE_DIR.glob("*.json"))
-    # Exclude cache directory
-    watches = [w for w in watches if w.parent == STATE_DIR]
-    if not watches:
+    targets = list_watch_targets()
+    if not targets:
         print("No active watches.")
         return
     print("Active watches:")
-    for w in watches:
-        name = w.stem.replace("__", "/")
+    for name in targets:
+        w = STATE_DIR / f"{name.replace('/', '__')}.json"
         state = json.loads(w.read_text())
         seen = len(state.get("seen_ids", []))
         print(f"  - {name} ({seen} events tracked)")

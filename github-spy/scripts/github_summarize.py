@@ -3,7 +3,7 @@
 
 import sys
 from datetime import datetime
-from github_api import fetch_user, parse_username
+from github_api import GitHubApiError, fetch_user, parse_username
 
 
 def classify_repo(repo: dict) -> str:
@@ -37,8 +37,20 @@ def main():
         print("ERROR: No username provided. Usage: github_summarize.py <username>")
         sys.exit(1)
 
-    username = parse_username(sys.argv[1])
-    profile, repos, events = fetch_user(username)
+    try:
+        username = parse_username(sys.argv[1])
+    except ValueError as exc:
+        print(f"ERROR: {exc}")
+        sys.exit(1)
+
+    try:
+        profile, repos, events = fetch_user(username)
+    except GitHubApiError as exc:
+        print(f"ERROR: {exc}")
+        sys.exit(1)
+    if not profile:
+        print(f"ERROR: GitHub user '{username}' not found.")
+        sys.exit(1)
 
     # Languages
     langs = {}

@@ -118,11 +118,20 @@ openclaw gateway restart
 ### 10. Test
 
 Open your Telegram bot and send:
-- `torvalds` — get a quick summary
-- `roast torvalds` — savage profile roast
-- `stalk torvalds` — surveillance report
-- `watch torvalds/linux` — start background monitoring
-- `what's the weather?` — get denied
+- `spy torvalds` — spy report for recent public activity
+- `roast torvalds` — roast based on stars/followers/commits/activity
+- `github.com/torvalds` — same as spy report
+- `watch torvalds` — start tracking a user
+- `watch torvalds/linux` — start tracking a repo
+- `check watch` — check all tracked targets now
+- `list watches` — list tracked targets
+
+For 24x7 monitoring on your local machine:
+
+```bash
+cd ~/.openclaw/workspace/skills/github-spy
+python3 scripts/github_watch_daemon.py --interval 120
+```
 
 ## Project Structure
 
@@ -130,10 +139,12 @@ Open your Telegram bot and send:
 github-spy/
   SKILL.md              # OpenClaw skill definition (triggers + instructions)
   scripts/
-    github_api.py       # Shared API client with 5-min cache + URL parsing
-    github_roast.py     # Fetch profile data for roasting
-    github_stalk.py     # Fetch activity data for surveillance
-    github_summarize.py # Developer skills/project analysis
+    github_api.py       # Shared API client + username validation + ETag caching
+    github_spy.py       # Unified dispatcher (spy + roast + watch commands)
+    github_watch_daemon.py # 24x7 polling loop for watched targets
+    github_roast.py     # Legacy roast utility
+    github_stalk.py     # Legacy surveillance utility
+    github_summarize.py # Legacy profile summary utility
     github_watch.py     # Watch targets for new events (ETag + state)
 docs/
   01-research-and-understanding.md
