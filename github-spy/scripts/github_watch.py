@@ -12,11 +12,13 @@ State is stored in ~/.openclaw/github-spy/<target>.json
 
 import json
 import sys
+import time
 from pathlib import Path
 from github_api import GitHubApiError, TOKEN, api_get
 
 STATE_DIR = Path.home() / ".openclaw" / "github-spy"
 COMMIT_FILES_CACHE: dict[tuple[str, str], list[str]] = {}
+RATE_LIMIT_RESET_EPOCH = 0
 
 
 def load_state(target: str) -> dict:
@@ -36,10 +38,25 @@ def save_state(target: str, state: dict):
     state_file.write_text(json.dumps(state, indent=2))
 
 
+def _set_rate_limit_reset(reset_epoch: int | None):
+    global RATE_LIMIT_RESET_EPOCH
+    if not reset_epoch:
+        return
+    if reset_epoch > RATE_LIMIT_RESET_EPOCH:
+        RATE_LIMIT_RESET_EPOCH = reset_epoch
+
+
+def get_rate_limit_wait_seconds() -> int:
+    remaining = RATE_LIMIT_RESET_EPOCH - int(time.time())
+    return remaining if remaining > 0 else 0
+
+
 def api_get_with_etag(path: str, etag: str | None = None) -> tuple[int, dict | list | None, str | None]:
     import urllib.request
     import urllib.error
-    import os
+
+    if get_rate_limit_wait_seconds() > 0:
+        return 429, None, None
 
     url = f"https://api.github.com{path}"
     req = urllib.request.Request(url)
@@ -60,7 +77,15 @@ def api_get_with_etag(path: str, etag: str | None = None) -> tuple[int, dict | l
         if e.code == 404:
             return 404, None, None
         if e.code == 403:
-            print("ERROR: GitHub API rate limit exceeded.")
+            headers = getattr(e, "headers", {}) or {}
+            remaining = headers.get("X-RateLimit-Remaining")
+            reset_raw = headers.get("X-RateLimit-Reset")
+            try:
+                reset_epoch = int(reset_raw) if reset_raw else 0
+            except ValueError:
+                reset_epoch = 0
+            if remaining == "0" and reset_epoch:
+                _set_rate_limit_reset(reset_epoch)
             return 403, None, None
         return e.code, None, None
     except urllib.error.URLError as e:
@@ -72,6 +97,9 @@ def api_get_with_etag(path: str, etag: str | None = None) -> tuple[int, dict | l
 
 
 def fetch_commit_files(repo: str, sha: str, max_files: int = 8) -> list[str]:
+    # Avoid extra API pressure when unauthenticated (60 req/hour).
+    if not TOKEN:
+        return []
     key = (repo, sha)
     if key in COMMIT_FILES_CACHE:
         return COMMIT_FILES_CACHE[key]
@@ -222,6 +250,8 @@ def check_target(target: str, emit_output: bool = True) -> list[str]:
 
     status, events, new_etag = api_get_with_etag(api_path, state.get("etag"))
 
+    if status in {403, 429}:
+        return []
     if status == 304:
         return []
     if status != 200 or not events:

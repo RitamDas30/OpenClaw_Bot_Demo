@@ -12,7 +12,8 @@ import sys
 import time
 from datetime import datetime, timezone
 
-from github_watch import check_target, list_watch_targets
+from github_watch import check_target, get_rate_limit_wait_seconds, list_watch_targets
+from github_api import TOKEN
 from telegram_notifier import list_subscribers, push_to_target
 
 
@@ -29,12 +30,31 @@ def run_loop(interval_seconds: int) -> int:
     else:
         print(f"[{_now_utc()}] Telegram broadcast subscribers: none.")
     print(f"[{_now_utc()}] Target-specific Telegram delivery uses auto-linked watch chat ids.")
+    if not TOKEN:
+        print(f"[{_now_utc()}] GitHub token not found. Running in low-rate mode.")
+        print(f"[{_now_utc()}] To raise limits, set GITHUB_TOKEN or create ~/.openclaw/github-spy/github_token.txt")
     while True:
         targets = list_watch_targets()
+        if not TOKEN and targets:
+            minimum_safe_interval = max(60, len(targets) * 70)
+        else:
+            minimum_safe_interval = interval_seconds
+        effective_interval = max(interval_seconds, minimum_safe_interval)
+
+        wait_seconds = get_rate_limit_wait_seconds()
+        if wait_seconds > 0:
+            print(f"[{_now_utc()}] GitHub rate-limited. Cooling down for {wait_seconds}s.")
+            time.sleep(wait_seconds)
+            continue
+
         if not targets:
             print(f"[{_now_utc()}] No active watches. Sleeping.")
         else:
-            print(f"[{_now_utc()}] Checking {len(targets)} watched target(s).")
+            auth_state = "authenticated" if TOKEN else "unauthenticated"
+            print(
+                f"[{_now_utc()}] Checking {len(targets)} watched target(s). "
+                f"mode={auth_state}, interval={effective_interval}s"
+            )
         for target in targets:
             alerts = check_target(target, emit_output=False)
             if alerts:
@@ -47,7 +67,12 @@ def run_loop(interval_seconds: int) -> int:
                 sent, failed = push_to_target(target, message)
                 if sent or failed:
                     print(f"[{_now_utc()}] Telegram push: sent={sent}, failed={failed}")
-        time.sleep(interval_seconds)
+        wait_seconds = get_rate_limit_wait_seconds()
+        if wait_seconds > 0:
+            print(f"[{_now_utc()}] Entering cooldown for {wait_seconds}s due to GitHub rate limit.")
+            time.sleep(wait_seconds)
+            continue
+        time.sleep(effective_interval)
 
 
 def main() -> None:

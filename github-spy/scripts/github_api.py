@@ -19,9 +19,38 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 GITHUB_API = "https://api.github.com"
-TOKEN = os.environ.get("GITHUB_TOKEN", "")
 CACHE_DIR = Path.home() / ".openclaw" / "github-spy" / "cache"
 USERNAME_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$")
+
+
+def _load_token() -> str:
+    """Resolve GitHub token with lightweight fallbacks."""
+    env_token = os.environ.get("GITHUB_TOKEN", "").strip()
+    if env_token:
+        return env_token
+
+    token_file = Path.home() / ".openclaw" / "github-spy" / "github_token.txt"
+    if token_file.exists():
+        try:
+            file_token = token_file.read_text().strip()
+        except OSError:
+            file_token = ""
+        if file_token:
+            return file_token
+
+    cfg_file = Path.home() / ".openclaw" / "openclaw.json"
+    if cfg_file.exists():
+        try:
+            cfg = json.loads(cfg_file.read_text())
+        except (OSError, json.JSONDecodeError):
+            cfg = {}
+        config_token = str((cfg.get("env") or {}).get("GITHUB_TOKEN") or "").strip()
+        if config_token:
+            return config_token
+    return ""
+
+
+TOKEN = _load_token()
 
 
 class GitHubApiError(RuntimeError):
